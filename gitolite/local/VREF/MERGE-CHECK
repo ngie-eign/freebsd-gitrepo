@@ -48,27 +48,28 @@ openzfs_merge_ok() {
 
 for rev in $(git log --format=%H "${oldrev}..${newrev}" 2>/dev/null); do
 	p2=$(git log -1 --format=%P "${rev}" | awk '{print $2}')
-	# if this is a merge commit
-	if [ -n "${p2}" ]; then
-		branch_src=$(git branch --contains "${p2}" | grep '^  vendor/')
-		branch_dst=${refname}
-
-		if [ -z "${branch_src}" ]; then
-			reject "Currently only allow merge from vendor/*"
-		else
-			branch_src="refs/heads/${branch_src##  }"
-		fi
-
-		if [ "${branch_dst}" = "refs/heads/main" ]; then
-			exit 0
-		fi
-
-		case "${branch_src}" in
-		refs/heads/vendor/openzfs/*)
-			openzfs_merge_ok "${branch_src}" "${branch_dst}" && exit 0
-			;;
-		esac
-
-		reject "Currently only allow merge from vendor/* to main"
+	# Skip non-merge commits.
+	if [ -z "${p2}" ]; then
+		continue
 	fi
+	branch_src=$(git branch --contains "${p2}" | grep '^  vendor/')
+	branch_dst=${refname}
+
+	if [ -z "${branch_src}" ]; then
+		reject "Currently only allow merge from vendor/*"
+	else
+		branch_src="refs/heads/${branch_src##  }"
+	fi
+
+	if [ "${branch_dst}" = "refs/heads/main" ]; then
+		exit 0
+	fi
+
+	case "${branch_src}" in
+	refs/heads/vendor/openzfs/*)
+		openzfs_merge_ok "${branch_src}" "${branch_dst}" && exit 0
+		;;
+	esac
+
+	reject "Currently only allow merge from vendor/* to main"
 done
