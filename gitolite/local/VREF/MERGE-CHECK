@@ -24,6 +24,31 @@ readonly STABLE13_HEAD_REF="refs/heads/stable/13"
 readonly STABLE14_HEAD_REF="refs/heads/stable/14"
 readonly STABLE15_HEAD_REF="refs/heads/stable/15"
 
+# OpenSSL has special merge rules because releases make API changes which
+# would break ABI compatibility for downstream consumers. Ergo, the version of
+# OpenSSL used on :main cannot be merged back to older versions of FreeBSD
+# without large downstream disruption.
+openssl_merge_ok() {
+	local branch_src="${1}"
+	local branch_dst="${2}"
+
+	local rc=1
+
+	case "${branch_src#refs/heads/vendor/}" in
+	openssl/3.0|openssl-3.0.*)
+		[ "${branch_dst}" = "${STABLE14_HEAD_REF}" ] && rc=0
+		;;
+	# NOTE: uncomment this once :main upgrades to a newer version of
+	# OpenSSL than stable/15.
+	#openssl/3.5|openssl-3.5.*)
+	#	[ "${branch_dst}" = "${STABLE15_HEAD_REF}" ] && rc=0
+	#	;;
+	*)
+		;;
+	esac
+	return "${rc}"
+}
+
 openzfs_merge_ok() {
 	local branch_src="${1}"
 	local branch_dst="${2}"
@@ -66,6 +91,9 @@ for rev in $(git log --format=%H "${oldrev}..${newrev}" 2>/dev/null); do
 	fi
 
 	case "${branch_src}" in
+	refs/heads/vendor/openssl*)
+		openssl_merge_ok "${branch_src}" "${branch_dst}" && exit 0
+		;;
 	refs/heads/vendor/openzfs/*)
 		openzfs_merge_ok "${branch_src}" "${branch_dst}" && exit 0
 		;;
