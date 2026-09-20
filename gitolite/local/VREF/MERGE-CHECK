@@ -1,13 +1,16 @@
 #!/bin/sh
+#
+# shellcheck shell=dash
 
 refname=$1
 oldrev=$2
 newrev=$3
-oldtree=$4
-newtree=$5
-access_flag=$6
-refex=$7
-repo=$8
+# Unused variables (commented out for clarity/shellcheck).
+#oldtree=$4
+#newtree=$5
+#access_flag=$6
+#refex=$7
+#repo=$8
 
 reject()
 {
@@ -24,7 +27,7 @@ for rev in $(git log --format=%H "${oldrev}..${newrev}" 2>/dev/null); do
 		branch_src=$(git branch --contains "${p2}" | grep '^  vendor/')
 		branch_dst=${refname}
 
-		if [ -z "$branch_src" ]; then
+		if [ -z "${branch_src}" ]; then
 			reject "Currently only allow merge from vendor/*"
 		else
 			branch_src="refs/heads/${branch_src##  }"
